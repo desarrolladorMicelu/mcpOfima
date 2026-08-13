@@ -4,6 +4,12 @@ Desplegable en Railway como servicio web.
 
 Claude web: pega la URL de Railway en "Agregar conector personalizado"
 Ejemplo: https://tu-app.up.railway.app/mcp
+
+Auth: GitHub OAuth (GitHubProvider de FastMCP)
+Requiere variables de entorno:
+  GITHUB_CLIENT_ID     — Client ID de tu GitHub OAuth App
+  GITHUB_CLIENT_SECRET — Client Secret de tu GitHub OAuth App
+  BASE_URL             — URL pública del servidor, ej: https://tu-app.up.railway.app
 """
 
 import os
@@ -11,11 +17,21 @@ import json
 import psycopg2
 import psycopg2.extras
 from dotenv import load_dotenv
-from mcp.server.fastmcp import FastMCP
+from fastmcp import FastMCP
+from fastmcp.server.auth.providers.github import GitHubProvider
 
 load_dotenv()
 
-mcp = FastMCP("OFIMA Data", stateless_http=True)
+# ── GitHub OAuth ──────────────────────────────────────────────────────────────
+_base_url = os.environ.get("BASE_URL", "http://localhost:8000").rstrip("/")
+
+auth_provider = GitHubProvider(
+    client_id=os.environ["GITHUB_CLIENT_ID"],
+    client_secret=os.environ["GITHUB_CLIENT_SECRET"],
+    base_url=_base_url,
+)
+
+mcp = FastMCP("OFIMA Data", auth=auth_provider)
 
 PG_SCHEMA = "backups"
 
@@ -39,7 +55,7 @@ def get_conn():
 
 # ── Herramientas MCP ──────────────────────────────────────────────────────────
 
-@mcp.tool()
+@mcp.tool
 def list_tables() -> str:
     """Lista las tablas OFIMA disponibles."""
     conn = get_conn()
@@ -57,7 +73,7 @@ def list_tables() -> str:
     return json.dumps(rows)
 
 
-@mcp.tool()
+@mcp.tool
 def describe_table(table_name: str) -> str:
     """
     Devuelve las columnas y tipos de una tabla OFIMA.
@@ -83,7 +99,7 @@ def describe_table(table_name: str) -> str:
     return json.dumps(cols, ensure_ascii=False)
 
 
-@mcp.tool()
+@mcp.tool
 def query_table(table_name: str, limit: int = 100, filters: str = "") -> str:
     """
     Consulta filas de una tabla OFIMA con filtros opcionales en SQL WHERE.
@@ -121,7 +137,7 @@ def query_table(table_name: str, limit: int = 100, filters: str = "") -> str:
     return json.dumps(rows, default=serialize, ensure_ascii=False)
 
 
-@mcp.tool()
+@mcp.tool
 def count_rows(table_name: str, filters: str = "") -> str:
     """
     Cuenta filas de una tabla OFIMA.
@@ -151,7 +167,7 @@ def count_rows(table_name: str, filters: str = "") -> str:
     return json.dumps(result)
 
 
-@mcp.tool()
+@mcp.tool
 def run_custom_query(sql: str) -> str:
     """
     Ejecuta una consulta SQL SELECT personalizada sobre las tablas OFIMA.
@@ -192,6 +208,8 @@ def run_custom_query(sql: str) -> str:
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
-    os.environ.setdefault("FASTMCP_HOST", "0.0.0.0")
-    os.environ.setdefault("FASTMCP_PORT", str(port))
-    mcp.run(transport="streamable-http")
+    mcp.run(
+        transport="http",
+        host="0.0.0.0",
+        port=port,
+    )
