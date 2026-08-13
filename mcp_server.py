@@ -14,8 +14,12 @@ Requiere variables de entorno:
 
 import os
 import json
+import threading
+import time
+import logging
 import psycopg2
 import psycopg2.extras
+from datetime import datetime, timezone
 from dotenv import load_dotenv
 from fastmcp import FastMCP
 from fastmcp.server.auth.providers.github import GitHubProvider
@@ -207,6 +211,31 @@ def run_custom_query(sql: str) -> str:
 
 
 if __name__ == "__main__":
+    # ── Cron interno: corre replicate.py todos los días a las 2 AM UTC ───────
+    def replication_loop():
+        log = logging.getLogger("replicator")
+        logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+        log.info("Scheduler de replicación iniciado. Corre a las 02:00 UTC diario.")
+        while True:
+            now = datetime.now(timezone.utc)
+            # Calcular segundos hasta las 02:00 UTC del próximo día
+            next_run = now.replace(hour=7, minute=0, second=0, microsecond=0)
+            if now >= next_run:
+                next_run = next_run.replace(day=next_run.day + 1)
+            wait_seconds = (next_run - now).total_seconds()
+            log.info(f"Próxima replicación en {wait_seconds/3600:.1f}h ({next_run.strftime('%Y-%m-%d %H:%M')} UTC)")
+            time.sleep(wait_seconds)
+            try:
+                from replicate import main as run_replication
+                log.info("Iniciando replicación OFIMA → PostgreSQL ...")
+                run_replication()
+            except Exception as e:
+                log.error(f"Error en replicación: {e}")
+
+    t = threading.Thread(target=replication_loop, daemon=True)
+    t.start()
+
+    # ── MCP server ─────────────────────────────────────────────────────────────
     port = int(os.environ.get("PORT", 8000))
     mcp.run(
         transport="http",
