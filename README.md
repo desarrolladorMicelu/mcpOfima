@@ -37,16 +37,6 @@ cp .env.example .env
 
 Llena las variables:
 
-```env
-SQLSERVER_HOST=172.200.231.95
-SQLSERVER_DB=MICELU
-SQLSERVER_USER=db_read
-SQLSERVER_PASSWORD=tu_password
-SQLSERVER_DRIVER=ODBC Driver 17 for SQL Server
-
-DATABASE_URL=postgresql://user:password@host:5432/dbname
-```
-
 ---
 
 ## Replicación

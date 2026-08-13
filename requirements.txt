@@ -1,4 +1,4 @@
 pyodbc
 psycopg2-binary
 python-dotenv
-mcp
+mcp[cli]==1.9.4
