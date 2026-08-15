@@ -214,6 +214,7 @@ def get_sqlserver_conn():
         f"UID={os.environ['SQLSERVER_USER']};"
         f"PWD={os.environ['SQLSERVER_PASSWORD']};"
         "TrustServerCertificate=yes;"
+        "Encrypt=no;"
     )
     return pyodbc.connect(conn_str)
 

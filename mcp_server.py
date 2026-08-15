@@ -219,7 +219,7 @@ if __name__ == "__main__":
         while True:
             now = datetime.now(timezone.utc)
             # Calcular segundos hasta las 02:00 UTC del próximo día
-            next_run = now.replace(hour=0, minute=10, second=0, microsecond=0)
+            next_run = now.replace(hour=0, minute=12, second=0, microsecond=0)
             if now >= next_run:
                 next_run = next_run.replace(day=next_run.day + 1)
             wait_seconds = (next_run - now).total_seconds()
