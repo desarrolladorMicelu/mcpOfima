@@ -50,6 +50,7 @@ auth_provider = GitHubProvider(
 mcp = FastMCP("OFIMA Data", auth=auth_provider)
 
 AVAILABLE_TABLES = [
+    "mvto",
     "mvtrade",
     "mtmercia",
     "vseriesutilidad",
@@ -59,12 +60,16 @@ AVAILABLE_TABLES = [
     "vcxp",
 ]
 
+OFIMA_SCHEMA = os.environ.get("OFIMA_SCHEMA", "dbo")
+# Base de datos de OFIMA (por defecto la misma de la conexión SQL Server)
+OFIMA_DB = os.environ.get("OFIMA_DB") or os.environ["SQLSERVER_DB"]
+
 
 def get_conn():
     conn_str = (
         f"DRIVER={{{os.environ['SQLSERVER_DRIVER']}}};"
         f"SERVER={os.environ['SQLSERVER_HOST']};"
-        f"DATABASE={os.environ['SQLSERVER_DB']};"
+        f"DATABASE={OFIMA_DB};"
         f"UID={os.environ['SQLSERVER_USER']};"
         f"PWD={os.environ['SQLSERVER_PASSWORD']};"
         "TrustServerCertificate=yes;"
@@ -101,7 +106,7 @@ def describe_table(table_name: str) -> str:
     Devuelve las columnas y tipos de una tabla OFIMA.
 
     Args:
-        table_name: Nombre de la tabla (mvtrade, mtmercia, vseriesutilidad, mvcuadre, vabonos, abocxp, vcxp)
+        table_name: Nombre de la tabla (mvto, mvtrade, mtmercia, vseriesutilidad, mvcuadre, vabonos, abocxp, vcxp)
     """
     if table_name not in AVAILABLE_TABLES:
         return json.dumps({"error": f"Tabla '{table_name}' no permitida."})
@@ -231,10 +236,9 @@ def run_custom_query(sql: str) -> str:
 
 API_TOKEN = os.environ.get("API_TOKEN", "").strip()
 
-OFIMA_SCHEMA = os.environ.get("OFIMA_SCHEMA", "dbo")
-
 # nombre lógico → tabla real en OFIMA (SQL Server)
 OFIMA_TABLES = {
+    "mvto": "MVTO",
     "mvtrade": "Mvtrade",
     "mtmercia": "MtMercia",
     "vseriesutilidad": "VSeriesUtilidad",
@@ -261,7 +265,7 @@ def get_ofima_conn():
     conn_str = (
         f"DRIVER={{{os.environ['SQLSERVER_DRIVER']}}};"
         f"SERVER={os.environ['SQLSERVER_HOST']};"
-        f"DATABASE={os.environ['SQLSERVER_DB']};"
+        f"DATABASE={OFIMA_DB};"
         f"UID={os.environ['SQLSERVER_USER']};"
         f"PWD={os.environ['SQLSERVER_PASSWORD']};"
         "TrustServerCertificate=yes;"
